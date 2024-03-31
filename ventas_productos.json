@@ -1,0 +1,17 @@
+{
+    "ventas": [
+    {
+        "vendedor": "Juan Perez",
+        "ventas": [
+        {"producto": "Producto 1", "precio": 100, "comision": 10},
+        {"producto": "Producto 2", "precio": 150, "comision": 15}
+        ]
+    },
+    {
+        "vendedor": "Maria Rodriguez",
+        "ventas": [
+        {"producto": "Producto 3", "precio": 200, "comision": 20}
+        ]
+    }
+    ]
+}

@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "nombre": "Juan",
+        "apellido": "Pérez",
+        "correo": "juan@example.com",
+        "saldo": 1000,
+        "convenio": "VIP"
+    },
+    {
+        "id": 2,
+        "nombre": "María",
+        "apellido": "González",
+        "correo": "maria@example.com",
+        "saldo": 500,
+        "convenio": "Regular"
+    }
+]

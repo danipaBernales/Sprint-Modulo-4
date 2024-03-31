@@ -1,27 +1,45 @@
 import datetime
 import json
 import pickle
+from flask import Flask, session, redirect, url_for, render_template
 from custom_exceptions import OutOfStockError
 
-class Cliente():
-    def __init__(self, idcliente, nombre, apellido, correo, saldo=0, convenio="Sin convenio"):
-        self.idcliente = idcliente
+# Clase base Persona
+class Persona():
+    def __init__(self, nombre, apellido, correo):
         self.nombre = nombre
         self.apellido = apellido
         self.correo = correo
-        self.fecha_registro = datetime.datetime.now()
+
+    def info_persona(self):
+        return f"Nombre: {self.nombre}\nApellido: {self.apellido}\nCorreo: {self.correo}"
+
+# Subclase Cliente, heredada de Persona
+class Cliente(Persona):
+    def __init__(self, nombre, apellido, correo, idcliente, saldo=0, convenio="Sin convenio"):
+        super().__init__(nombre, apellido, correo)
+        self.idcliente = idcliente
+        self.saldo = saldo
         self.convenio = convenio
-        self.__saldo = saldo
+        self.compras = []  # Lista para almacenar las compras del cliente
+        self.carrito = CarritoCompras()  # Carrito de compras para el cliente
 
     def info_cliente(self):
-        return f"ID: {self.idcliente}\nNombre: {self.nombre}\nApellido: {self.apellido}\nCorreo: {self.correo}\nFecha de registro: {self.fecha_registro}\nSaldo: {self.__saldo}\nConvenio: {self.convenio}"
-
-    def obtener_saldo(self):
-        return self.__saldo
+        return f"{super().info_persona()}\nID: {self.idcliente}\nSaldo: {self.saldo}\nConvenio: {self.convenio}"
 
     def depositar_saldo(self, monto):
-        self.__saldo += monto
-        return self.__saldo
+        self.saldo += monto
+        return self.saldo
+    
+    def agregar_al_carrito(self, producto):
+        self.carrito.agregar_producto(producto)
+
+    def eliminar_del_carrito(self, producto):
+        self.carrito.eliminar_producto(producto)
+
+    def ver_carrito(self):
+        for producto in self.carrito.productos:
+            print(producto.info_producto())
 
     def cambiar_producto(self, producto_entrante, producto_saliente):
         diferencia = producto_saliente.valor_neto - producto_entrante.valor_neto
@@ -47,8 +65,81 @@ class Cliente():
             promedio = sum(compras) / len(compras)
             return promedio
         except ZeroDivisionError:
-            return 0 # Si el cliente no tiene compras, se devuelve 0 como valor promedio
+            return 0  # Si el cliente no tiene compras, se devuelve 0 como valor promedio
 
+# Carrito de compras
+class CarritoCompras():
+    def __init__(self):
+        self.productos = []
+
+    def agregar_producto(self, producto):
+        self.productos.append(producto)
+
+    def eliminar_producto(self, producto):
+        if producto in self.productos:
+            self.productos.remove(producto)
+
+    def calcular_total(self):
+        total = sum(producto.valor_neto for producto in self.productos)
+        return total
+    
+class OutOfStockError(Exception):
+    pass
+
+# Función para obtener cliente por su ID
+def obtener_cliente_por_id(id_cliente):
+    for cliente in clientes:
+        if cliente.idcliente == id_cliente:
+            return cliente
+    return None  # Retornar None si no se encuentra ningún cliente con el ID dado
+
+# Función para obtener producto por su SKU
+def obtener_producto_por_sku(sku):
+    try:
+        with open('productos.json', 'r') as file:
+            productos = json.load(file)
+            for producto in productos:
+                if producto['sku'] == sku:
+                    return producto
+    except FileNotFoundError:
+        print("El archivo de productos no se encontró.")
+    
+    return None  # Retorna None si el producto con el SKU dado no se encuentra en el archivo JSON
+
+# Cargar cliente desde un archivo
+def cargar_clientes():
+    try:
+        with open("clientes.json", "r") as f:
+            data = json.load(f)
+            clientes = []
+            for cliente_data in data:
+                cliente = Cliente(cliente_data['nombre'], cliente_data['apellido'], cliente_data['correo'], cliente_data['idcliente'], cliente_data['saldo'], cliente_data['convenio'])
+                cliente.fecha_registro = datetime.datetime.strptime(cliente_data['fecha_registro'], '%Y-%m-%d %H:%M:%S')
+                clientes.append(cliente)
+            return clientes
+    except FileNotFoundError:
+        return []
+
+# Guardar clientes en un archivo
+def guardar_clientes(clientes):
+    with open("clientes.json", "w") as f:
+        json.dump([cliente.__dict__ for cliente in clientes], f, indent=4)
+
+# Variables globales
+clientes = cargar_clientes()
+
+# Ejemplo de uso
+cliente1 = Cliente("Juan", "Pérez", "juan@example.com", "001", 1000, "VIP")
+cliente2 = Cliente("María", "González", "maria@example.com", "002", 500)
+
+# Agregar clientes a la lista de clientes
+clientes.append(cliente1)
+clientes.append(cliente2)
+
+# Guardar clientes en el archivo JSON
+guardar_clientes(clientes)
+
+# Detalle Producto
 class Producto():
     def __init__(self, sku, nombre, categoria, proveedor, stock, valor_neto, impuesto=1.19, descuento=0):
         self.sku = sku
@@ -60,6 +151,24 @@ class Producto():
         self.descuento = descuento
         self.__impuesto = impuesto
 
+    # Convertir el objeto Producto a un diccionario
+    def to_dict(self):
+        return {
+            'sku': self.sku,
+            'nombre': self.nombre,
+            'categoria': self.categoria,
+            'proveedor': self.proveedor,
+            'stock': self.stock,
+            'valor_neto': self.valor_neto,
+            'descuento': self.descuento,
+            'impuesto': self.impuesto,
+            'precio': self.precio_total
+        }
+
+    def guardar_productos(productos):
+        with open('productos.json', 'w') as file:
+            json.dump([p.to_dict() for p in productos], file, indent=4)
+
     def info_producto(self):
         return f"SKU: {self.sku}\nNombre: {self.nombre}\nCategoría: {self.categoria}\nProveedor: {self.proveedor}\nStock: {self.stock}\nValor neto: {self.valor_neto}\nImpuesto: {self.__impuesto}\nDescuento: {self.descuento}"
 
@@ -69,22 +178,25 @@ class Producto():
         self.stock -= 1
         return "Producto vendido con éxito"
 
-class Vendedor():
-    def __init__(self, run, nombre, apellido, seccion, comision=0, turno_noche=False):
+# Subclase Vendedor, heredada de Persona
+class Vendedor(Persona):
+    def __init__(self, nombre, apellido, correo, run, seccion, comision=0, turno_noche=False):
+        super().__init__(nombre, apellido, correo)
         self.run = run
-        self.nombre = nombre
-        self.apellido = apellido
         self.seccion = seccion
-        self.__comision = comision
+        self.comision = comision
         self.turno_noche = turno_noche
+
+    def info_vendedor(self):
+        return f"{super().info_persona()}\nRUN: {self.run}\nSección: {self.seccion}\nComisión: {self.comision}\nTurno noche: {self.turno_noche}"
 
     def vender(self, producto, cliente):
         try:
-            if not cliente.obtener_saldo() >= producto.valor_neto:
+            if not cliente.saldo >= producto.valor_neto:
                 return "Saldo insuficiente"
             producto.vender()
             comision = producto.valor_neto * 0.005
-            self.__comision += comision
+            self.comision += comision
             cliente.depositar_saldo(-producto.valor_neto)
             return "Venta exitosa"
         except OutOfStockError as e:
@@ -262,3 +374,37 @@ while True:
                     print("Opción no válida")
                     break
 
+app = Flask(__name__)
+app.secret_key = 'tu_clave_secreta'  # Configura la clave secreta de la aplicación
+
+# Rutas y las funciones asociadas
+@app.route('/agregar_al_carrito/<sku>')
+def agregar_al_carrito(sku):
+    if 'cliente_id' not in session:
+        return redirect(url_for('login'))  # Redirige al usuario al login si no está autenticado
+
+    # Obtener el cliente desde la sesión o la base de datos
+    cliente = obtener_cliente_por_id(session['cliente_id'])
+
+    # Obtener el producto basándote en el SKU
+    producto = obtener_producto_por_sku(sku)
+
+    if producto:
+        cliente.carrito.agregar_producto(producto)
+        return redirect(url_for('mostrar_carrito'))
+    else:
+        # Manejo en que el producto no existe
+        pass
+
+@app.route('/mostrar_carrito')
+def mostrar_carrito():
+    if 'cliente_id' not in session:
+        return redirect(url_for('login'))  # Redirige al usuario al login si no está autenticado
+
+    # Obtener el cliente desde la sesión o la base de datos
+    cliente = obtener_cliente_por_id(session['cliente_id'])
+
+    return render_template('carrito.html', cliente=cliente)
+
+if __name__ == '__main__':
+    app.run(debug=True)
