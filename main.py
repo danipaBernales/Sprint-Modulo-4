@@ -319,42 +319,6 @@ sucursal = Sucursal("Sucursal Principal")
 stock_productos = cargar_stock_productos()
 ventas_vendedores = cargar_ventas_vendedores()
 
-# Flask app
-app = Flask(__name__)
-app.secret_key = 'tu_clave_secreta'  # Configura la clave secreta de la aplicación
-
-# Rutas y las funciones asociadas
-@app.route('/agregar_al_carrito/<sku>')
-def agregar_al_carrito(sku):
-    if 'cliente_id' not in session:
-        return redirect(url_for('login'))  # Redirige al usuario al login si no está autenticado
-
-    # Obtener el cliente desde la sesión o la base de datos
-    cliente = obtener_cliente_por_id(session['cliente_id'])
-
-    # Obtener el producto basándote en el SKU
-    producto = obtener_producto_por_sku(sku)
-
-    if producto:
-        cliente.carrito.agregar_producto(producto)
-        return redirect(url_for('mostrar_carrito'))
-    else:
-        # Manejo en que el producto no existe
-        pass
-
-@app.route('/mostrar_carrito')
-def mostrar_carrito():
-    if 'cliente_id' not in session:
-        return redirect(url_for('login'))  # Redirige al usuario al login si no está autenticado
-
-    # Obtener el cliente desde la sesión o la base de datos
-    cliente = obtener_cliente_por_id(session['cliente_id'])
-
-    return render_template('carrito.html', cliente=cliente)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
 # OPCIONES MENU
 menu_base = ["Clientes", "Bodega", "Vendedores", "Proveedores", "Venta"]
 menu_clientes = ["Listar", "Crear", "Editar", "Eliminar", "Salir"]
