@@ -36,9 +36,13 @@ class Cliente(Persona):
     def eliminar_del_carrito(self, producto):
         self.carrito.eliminar_producto(producto)
 
-    def ver_carrito(self):
-        for producto in self.carrito.productos:
-            print(producto.info_producto())
+    def mostrar_carrito(self):
+        if not self.carrito.productos:
+            print("El carrito está vacío")
+        else:
+            print("Productos en el carrito:")
+            for producto in self.carrito.productos:
+                print(producto.info_producto())
 
     def cambiar_producto(self, producto_entrante, producto_saliente):
         diferencia = producto_saliente.valor_neto - producto_entrante.valor_neto
@@ -242,6 +246,13 @@ class OrdenCompra():
             total = self.producto.valor_neto
         return total
 
+    def mostrar_detalle_orden(self):
+        print("Detalle de la orden de compra:")
+        print(f"ID Orden: {self.id_ordencompra}")
+        print(f"Producto: {self.producto.nombre}")
+        print(f"Despacho: {'Sí' if self.despacho else 'No'}")
+        print(f"Total: {self.calcular_total()}")
+
 # Reponer productos en Bodega
 class Bodega():
     @staticmethod
@@ -372,6 +383,29 @@ while True:
                     pass
                 elif opcion_seleccionada_menu == 5:
                     break  # Salir al menu base
+                elif opcion_seleccionada_menu == 6:
+                    id_cliente = input("Ingrese el ID del cliente: ")
+                    cliente = obtener_cliente_por_id(id_cliente)
+                    if cliente:
+                        cliente.mostrar_carrito()
+                    else:
+                        print("Cliente no encontrado")
+                    opcion_seleccionada_menu = 0
+                elif opcion_seleccionada_menu == 7:
+                    id_cliente = input("Ingrese el ID del cliente: ")
+                    cliente = obtener_cliente_por_id(id_cliente)
+                    if cliente:
+                        if cliente.carrito.productos:
+                            producto_orden = cliente.carrito.productos[0]  # Se asume que se crea la orden con el primer producto del carrito
+                            despacho = input("¿Desea despacho? (s/n): ").lower() == 's'
+                            orden_compra = OrdenCompra(id_ordencompra, producto_orden, despacho)
+                            print("Detalle de la orden de compra:")
+                            orden_compra.mostrar_detalle_orden()
+                        else:
+                            print("El carrito está vacío. No se puede crear la orden de compra.")
+                    else:
+                        print("Cliente no encontrado")
+                    opcion_seleccionada_menu = 0
                 else:
                     print("Opción no válida")
                     break
