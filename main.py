@@ -253,6 +253,13 @@ class OrdenCompra():
         print(f"Despacho: {'Sí' if self.despacho else 'No'}")
         print(f"Total: {self.calcular_total()}")
 
+# Obtener un nuevo ID único para cada orden de compra
+def obtener_nuevo_id_ordencompra():
+    global id_ordencompra
+    nuevo_id = id_ordencompra
+    id_ordencompra += 1  # Incrementar el ID para la próxima orden de compra
+    return nuevo_id
+
 # Reponer productos en Bodega
 class Bodega():
     @staticmethod
@@ -328,6 +335,7 @@ proveedores = cargar_proveedores()
 sucursal = Sucursal("Sucursal Principal")
 stock_productos = cargar_stock_productos()
 ventas_vendedores = cargar_ventas_vendedores()
+id_ordencompra = 1  # Inicializar en 1
 
 # OPCIONES MENU
 menu_base = ["Clientes", "Bodega", "Vendedores", "Proveedores", "Venta"]
@@ -396,8 +404,9 @@ while True:
                     cliente = obtener_cliente_por_id(id_cliente)
                     if cliente:
                         if cliente.carrito.productos:
-                            producto_orden = cliente.carrito.productos[0]  # Se asume que se crea la orden con el primer producto del carrito
+                            producto_orden = cliente.carrito.productos[0]  # Se crea la orden con el primer producto del carrito
                             despacho = input("¿Desea despacho? (s/n): ").lower() == 's'
+                            id_ordencompra = obtener_nuevo_id_ordencompra()
                             orden_compra = OrdenCompra(id_ordencompra, producto_orden, despacho)
                             print("Detalle de la orden de compra:")
                             orden_compra.mostrar_detalle_orden()
