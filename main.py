@@ -1,7 +1,6 @@
 import datetime
 import json
 import pickle
-from flask import Flask, session, redirect, url_for, render_template
 from custom_exceptions import OutOfStockError
 
 # Clase base Persona
